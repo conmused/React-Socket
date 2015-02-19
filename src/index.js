@@ -28,8 +28,7 @@ var _ = require('lodash');
     */
 
     socketDisconnect: function(){
-      console.log(socket);
-      if(socket.connected){
+\      if(socket.connected){
         this.socketOffAll(); //garbage collection.
         socket.io.close();
       }
