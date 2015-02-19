@@ -27,7 +27,7 @@ var _ = require('lodash');
     *  Connect/Disconnect Methods. Minimize persistant connections.
     */
 
-    disconnect: function(){
+    socketDisconnect: function(){
       console.log(socket);
       if(socket.connected){
         this.socketOffAll(); //garbage collection.
@@ -35,12 +35,12 @@ var _ = require('lodash');
       }
     },
 
-    connect: function(url){
+    socketConnect: function(url){
       if(!socket.connected){
-        if(!this.state.reconnect){
+        if(!this.state.socketReconnect){
           //If we haven't yet connected.
           socket = url ? io.connect(url) : io.connect();
-          this.setState({reconnect:true});
+          this.setState({socketReconnect:true});
         } else {
           //maintain connection.
           socket.io.open();
@@ -54,7 +54,7 @@ var _ = require('lodash');
     * Loop through all of our listeners and subscribe to the socket event.
     * Listeners is a function that returns an object.
     */
-    getListeners: function(){
+    getSocketListeners: function(){
       var that = this;
       var listeners = this.listeners();
       this.socketEvents = {};
@@ -71,13 +71,6 @@ var _ = require('lodash');
           throw new Error('Listener: "' + key + '" is not a function');
         }
       });
-    },
-
-    /**
-    * Clean up all of our even listeners
-    */
-    componentWillUnmount: function() {
-      this.socketOffAll();
     },
 
     /**
