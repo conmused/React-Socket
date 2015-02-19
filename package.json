@@ -1,16 +1,16 @@
 {
-  "name": "resocket.io",
+  "name": "react-socket",
   "version": "0.1.0",
-  "description": "socket.io mixin for React to make dealing with websocket simple and intuitive.",
-  "main": "resocket.io.js",
+  "description": "A socket.io mixin for React.js, made to help handle websockets and component lifecycles",
+  "main": "react-socket.min.js",
   "scripts": {
-    "start": "webpack --progress --colors --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Brandon Pierce <brandon@brandonjpierce.com> (http://brandonjpierce.com/)",
+  "author": "Matthew Oden Potter <heymatthewoden@gmail.com>",
+  "contributors": "Brandon Pierce <brandon@brandonjpierce.com> (http://brandonjpierce.com/)",
   "license": "MIT",
   "devDependencies": {
-    "jsx-loader": "^0.12.2",
-    "webpack": "^1.5.3"
+    "socket.io-client": "^1.3.4",
+    "lodash": "3.0.0"
   }
 }

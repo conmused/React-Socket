@@ -1,13 +1,17 @@
-var io = require('socket.io');
+'use strict';
+var io = require('socket.io-client');
+var _ = require('lodash');
 
 /**
  * Mixin constructor
  * @param {string} url Namespace you want to subscribe to with socket.io
  */
-var Mixin = function SocketMixin(url) {
-  // private socket instance
-  // TODO: determine if its a good idea to expose this or not...
-  var socket = url ? io.connect(url) : io.connect();
+
+ var Mixin = function SocketMixin(url) {
+  /**
+  /* scoped socket instance
+  */
+  var socket = io;
 
   /**
   * Private helper method to determine if value exists and is a function
@@ -18,29 +22,55 @@ var Mixin = function SocketMixin(url) {
   }
 
   return {
+
     /**
-    * Loop through all of our listeners and subscribe to the socket event
+    *  Connect/Disconnect Methods. Minimize persistant connections.
     */
-    componentWillMount: function() {
-      // TODO: determine if this should be kept in state
+
+    disconnect: function(){
+      console.log(socket);
+      if(socket.connected){
+        this.socketOffAll(); //garbage collection.
+        socket.io.close();
+      }
+    },
+
+    connect: function(url){
+      if(!socket.connected){
+        if(!this.state.reconnect){
+          //If we haven't yet connected.
+          socket = url ? io.connect(url) : io.connect();
+          this.setState({reconnect:true});
+        } else {
+          //maintain connection.
+          socket.io.open();
+        }
+
+        this.getListeners();
+      }
+    },
+
+    /**
+    * Loop through all of our listeners and subscribe to the socket event.
+    * Listeners is a function that returns an object.
+    */
+    getListeners: function(){
+      var that = this;
+      var listeners = this.listeners();
       this.socketEvents = {};
 
-      if (!this.listeners) {
+      if (!listeners) {
         throw new Error('SocketMixin requires listeners to be defined on the component');
       }
-
-      for (var key in this.listeners) {
-        if (this.listeners.hasOwnProperty(key)) {
-          var listener = this.listeners[key];
-
-          if (existsAndFunc(listener)) {
-            this.socketEvents[key] = listener.bind(this);
-            socket.on(key, this.socketEvents[key]);
-          } else {
-            throw new Error('Listener: "' + key + '" is not a function');
-          }
+      _.forIn(listeners, function(value, key){
+        var listener = listeners[key];
+        if(existsAndFunc(listener)){
+          that.socketEvents[key] = listener;
+          socket.on(key, that.socketEvents[key]);
+        } else {
+          throw new Error('Listener: "' + key + '" is not a function');
         }
-      }
+      });
     },
 
     /**
@@ -70,8 +100,10 @@ var Mixin = function SocketMixin(url) {
     * @param {string} key The event name youw wish to subscribe to
     */
     socketOn: function(key) {
-      if (this.listeners && key) {
-        this.socketEvents[key] = this.listeners[key].bind(this);
+      var listeners = this.listeners();
+
+      if (listeners && key) {
+        this.socketEvents[key] = listeners[key];
         socket.on(key, this.socketEvents[key]);
       }
     },
@@ -81,10 +113,11 @@ var Mixin = function SocketMixin(url) {
     * @param {string} key The event name you wish to remove
     */
     socketOff: function(key) {
-      if (this.listeners && key) {
-        if (existsAndFunc(this.listeners[key])) {
+      var listeners = this.listeners();
+      if (listeners && key) {
+        if (existsAndFunc(listeners[key])) {
           socket.removeListener(key, this.socketEvents[key]);
-          this.socketEvents[key] = null; //gc
+          this.socketEvents[key] = null; //garbage collection
         }
       }
     },
@@ -93,14 +126,15 @@ var Mixin = function SocketMixin(url) {
     * Public method for removing all listeners for the component
     */
     socketOffAll: function() {
-      if (this.listeners) {
-        for (var key in this.listeners) {
-          if (this.listeners.hasOwnProperty(key)) {
-            if (existsAndFunc(this.listeners[key])) {
-              socket.removeListener(key, this.socketEvents[key]);
-            }
+      var listeners = this.listeners();
+      var that = this;
+
+      if (listeners) {
+        _.forIn(listeners, function(value, key){
+          if (existsAndFunc(listeners[key])) {
+            socket.removeListener(key, that.socketEvents[key]);
           }
-        }
+        });
 
         // garbage collect our socketEvents object
         this.socketEvents = null;
